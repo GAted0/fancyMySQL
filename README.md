@@ -10,6 +10,7 @@ sudo pip install -r requirements.txt
 
 １、创建表:
 
+```mysql
 CREATE TABLE `media` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(128) DEFAULT '',
@@ -19,6 +20,7 @@ CREATE TABLE `media` (
   KEY `NewIndex1` (`name`),
   KEY `NewIndex2` (`chunkID`)
 )
+```
 
 ２、上传：
 
@@ -30,7 +32,7 @@ python fancyMySQL.py get $fileName $filePath
 
 
 # 异常问题参看
-# https://stackoverflow.com/questions/25865270/how-to-install-python-mysqldb-module-using-pip
-# https://cpp.la/145.html
+  https://stackoverflow.com/questions/25865270/how-to-install-python-mysqldb-module-using-pip    
+  https://cpp.la/145.html
 
 # 未完待续,完善后会封包
