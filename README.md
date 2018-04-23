@@ -8,7 +8,7 @@ sudo pip install -r requirements.txt
 
 # 使用帮助
 
-１、创建表:
+１、编辑fancyMySQL.py中的数据库信息，创建表:
 
 ```mysql
 CREATE TABLE `media` (
