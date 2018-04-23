@@ -3,7 +3,8 @@
 
 # 安装依赖
 
-sudo pip install -r requirements.txt
+1、安装MySQL-python依赖：https://cpp.la/145.html#i-4    
+2、sudo pip install -r requirements.txt
 
 
 # 使用帮助
