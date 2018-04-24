@@ -4,12 +4,11 @@
 # 安装依赖
 
 1、安装MySQL-python依赖：https://cpp.la/145.html#i-4    
-2、sudo pip install -r requirements.txt
-
+2、sudo pip install -r requirements.txt　　　　
 
 # 使用帮助
 
-１、编辑fancyMySQL.py中的数据库信息。　　　　
+１、编辑setting.py中的数据库信息。　　　　
 
 ２、上传：
 
@@ -17,7 +16,13 @@ python fancyMySQL.py put $fileName
 
 ３、下载：
 
-python fancyMySQL.py get $fileName $filePath
+python fancyMySQL.py get $fileName $filePath　　　　
+
+# 更新说明　　　　
+
+20180503: 下次更新，加入多线程下载，类似IDM
+20180424: 自动创建表, 加入多线程上传
+
 
 
 # 异常问题参看

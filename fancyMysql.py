@@ -6,24 +6,18 @@ import MySQLdb
 import time
 import sys
 import gc
+import threading
 from tqdm import tqdm
 from warnings import filterwarnings
+from setting import MYSQL_URI, OPEN_THREAD, MAX_THREAD
 filterwarnings('ignore', category=MySQLdb.Warning)
 
-# version: beta 1.0
-# todo: 未优化内存：　上传需要占用同等文件大小的内存（拆包）。
-# todo: 分表索引聚合表mediaIndex
-# todo: 未作分表存储（一直单表存储数据会导致目标服务器负载高）。
+# version: beta 1.1
+# todo:　上传完毕，包完整检查，重试机制
+# todo: 未优化拆包内存：　上传需要占用同等文件大小的内存。 [下次重点优化,边拆边发]
+# todo: 未作分表存储（一直单表存储数据会导致目标服务器负载高）,分表聚合索引mediaIndex。
 # todo: 多线程未完
 
-# 数据库信息
-MYSQL_URI = {
-    'db': 'db',
-    'host': 'host',
-    'port': 3306,
-    'user': 'root',
-    'password': '123456'
-}
 
 class mysql_client(object):
 
@@ -122,6 +116,41 @@ def createTable():
     del MC
     gc.collect()
 
+def putFileThread(fileName, fileChunk):
+    MC = mysql_client()
+    keyContent = fileChunk[0]
+    valueContent = fileChunk[1]
+    if keyContent != "splitCount":
+        MC.writeBLOB(fileName=fileName, chunkID=int(keyContent), binaryBuffer=valueContent)
+    else:
+        MC.writeBLOB(fileName=fileName, chunkID=int(0), binaryBuffer=bytes(valueContent))
+    del valueContent
+    del keyContent
+    del MC
+    gc.collect()
+
+def putFileWork(fileName, bigChunkedFileDict, maxThread=MAX_THREAD):
+    while len(bigChunkedFileDict):
+        if threading.activeCount() < maxThread:
+            t = threading.Thread(target=putFileThread, kwargs={'fileName': fileName, 'fileChunk': bigChunkedFileDict.popitem()})
+            t.setDaemon(True)
+            t.start()
+        else:
+            time.sleep(0.1)
+    currentThread = threading.current_thread()
+    for t in threading.enumerate():
+        if t is currentThread:
+            continue
+        else:
+            t.join()
+
+def getFileThread():
+    pass
+
+def getFileWork():
+    # todo: 多线程下载需要预上传文件体积。未完
+    pass
+
 if __name__ == '__main__':
     '''
     put: python fancyMysql.py put $filePath
@@ -140,19 +169,24 @@ if __name__ == '__main__':
     elif method == "put":
         filePath = sys.argv[2]
         fileName = filePath.split("/")[-1]
-
+        startTime = time.time()
         FH = file_handle(filePath)
-        MC = mysql_client()
 
-        for k,v in tqdm(FH.splitFile.items()):
-            if k!= "splitCount":
-                MC.writeBLOB(fileName=fileName, chunkID=int(k), binaryBuffer=v)
-            else:
-                MC.writeBLOB(fileName=fileName, chunkID=int(0), binaryBuffer=bytes(v))
+        if OPEN_THREAD:
+            putFileWork(fileName, FH.splitFile)
+        else:
+            MC = mysql_client()
+            for k, v in tqdm(FH.splitFile.items()):
+                if k != "splitCount":
+                    MC.writeBLOB(fileName=fileName, chunkID=int(k), binaryBuffer=v)
+                else:
+                    MC.writeBLOB(fileName=fileName, chunkID=int(0), binaryBuffer=bytes(v))
+            del MC
 
         del FH
-        del MC
         gc.collect()
+        endTime = time.time()
+        print("耗时: %s秒" % int(endTime-startTime))
 
     elif method == "get":
         fileName = sys.argv[2]
