@@ -9,19 +9,7 @@
 
 # 使用帮助
 
-１、编辑fancyMySQL.py中的数据库信息，创建表:
-
-```mysql
-CREATE TABLE `media` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) DEFAULT '',
-  `chunkID` int(11) NOT NULL,
-  `file` longblob,
-  PRIMARY KEY (`id`),
-  KEY `NewIndex1` (`name`),
-  KEY `NewIndex2` (`chunkID`)
-)
-```
+１、编辑fancyMySQL.py中的数据库信息。　　　　
 
 ２、上传：
 

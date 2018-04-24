@@ -7,16 +7,18 @@ import time
 import sys
 import gc
 from tqdm import tqdm
+from warnings import filterwarnings
+filterwarnings('ignore', category=MySQLdb.Warning)
 
 # version: beta 1.0
 # todo: 未优化内存：　上传需要占用同等文件大小的内存（拆包）。
-# todo: 未做自动建表
+# todo: 分表索引聚合表mediaIndex
 # todo: 未作分表存储（一直单表存储数据会导致目标服务器负载高）。
 # todo: 多线程未完
 
 # 数据库信息
 MYSQL_URI = {
-    'db': 'test',
+    'db': 'db',
     'host': 'host',
     'port': 3306,
     'user': 'root',
@@ -47,7 +49,7 @@ class mysql_client(object):
             cur.execute(sql)
             self.mysql.commit()
             return True
-        except:
+        except Exception as e:
             self.mysql.rollback()
             return False
 
@@ -100,13 +102,36 @@ class file_handle(object):
                     break
         return self.memoryBuffer
 
+def createTable():
+    MC = mysql_client()
+    sql = '''
+    CREATE TABLE IF NOT EXISTS media(
+        id int(11) NOT NULL AUTO_INCREMENT,
+        name varchar(128) DEFAULT '',
+        chunkID int(11) NOT NULL,
+        file longblob,
+        PRIMARY KEY (id),
+        KEY NewIndex1 (name),
+        KEY NewIndex2 (chunkID)
+    )
+    '''
+    if MC.exec_sql(sql) is False:
+        raise Exception("create Table media failed!")
+    else:
+        pass
+    del MC
+    gc.collect()
+
 if __name__ == '__main__':
     '''
-    example put file: python fancyMysql.py put $filePath
-    example get file: python fancyMysql.py get $fileName $filePath 
+    put: python fancyMysql.py put $filePath
+    get: python fancyMysql.py get $fileName $filePath 
     '''
     if len(sys.argv) < 3:
         raise Exception("Parameter Exception!")
+
+    createTable()
+
     method = sys.argv[1]
 
     if method != "put" and method != "get":
