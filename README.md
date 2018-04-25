@@ -1,5 +1,5 @@
 # fancyMySQL
- fancyMySQL，花式玩转数据库~　数据库可以当网盘用啦。
+ fancyMySQL，花式玩转数据库,文件写入数据库，文件写入mysql~ 数据库可以当网盘用啦。
 
 # 安装依赖
 
@@ -20,8 +20,8 @@ python fancyMySQL.py get $fileName $filePath　　　　
 
 # 更新说明　　　　
 
-20180503: 下次更新，加入多线程下载，类似IDM    
-20180424: 自动创建表, 加入多线程上传    
+20180425: version beta 1.2, 加入多线程下载，类似IDM    
+20180424: version beta 1.1, 自动创建表, 加入多线程上传    
 
 
 
