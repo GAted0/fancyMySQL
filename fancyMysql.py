@@ -12,11 +12,10 @@ from warnings import filterwarnings
 from setting import MYSQL_URI, OPEN_THREAD, MAX_THREAD
 filterwarnings('ignore', category=MySQLdb.Warning)
 
-# version: beta 1.1
+# version: beta 1.2
 # todo:　上传完毕，包完整检查，重试机制
 # todo: 未优化拆包内存：　上传需要占用同等文件大小的内存。 [下次重点优化,边拆边发]
 # todo: 未作分表存储（一直单表存储数据会导致目标服务器负载高）,分表聚合索引mediaIndex。
-# todo: 多线程未完
 
 
 class mysql_client(object):
@@ -32,7 +31,7 @@ class mysql_client(object):
                 local_infile=True
             )
         except Exception as e:
-            print(str(e))
+            print("连接数据库出错!")
 
     def __del__(self):
         self.mysql.close()
@@ -144,12 +143,29 @@ def putFileWork(fileName, bigChunkedFileDict, maxThread=MAX_THREAD):
         else:
             t.join()
 
-def getFileThread():
-    pass
+def getFileThread(filePath, singleChunk):
+    MC = mysql_client()
+    with open(filePath, "wb") as f:
+        f.seek((singleChunk-1)*1024*1024)
+        f.write(MC.readBLOB(fileName, singleChunk))
+    del MC
+    gc.collect()
 
-def getFileWork():
-    # todo: 多线程下载需要预上传文件体积。未完
-    pass
+def getFileWork(filePath, splitCount, maxThread=MAX_THREAD):
+    while splitCount:
+        if threading.activeCount() < maxThread:
+            t = threading.Thread(target=getFileThread, kwargs={'filePath': filePath, 'singleChunk': splitCount})
+            splitCount = splitCount - 1
+            t.setDaemon(True)
+            t.start()
+        else:
+            time.sleep(0.1)
+    currentThread = threading.currentThread()
+    for t in threading.enumerate():
+        if t is currentThread:
+            continue
+        else:
+            t.join()
 
 if __name__ == '__main__':
     '''
@@ -162,9 +178,8 @@ if __name__ == '__main__':
     createTable()
 
     method = sys.argv[1]
-
-    if method != "put" and method != "get":
-        raise Exception("Put or Get File?")
+    if method not in ["put", "get", "tree"]:
+        raise Exception("Put[上传] or Get[下载] or tree[预览] File?")
 
     elif method == "put":
         filePath = sys.argv[2]
@@ -191,20 +206,24 @@ if __name__ == '__main__':
     elif method == "get":
         fileName = sys.argv[2]
         filePath = sys.argv[3]
+        startTime = time.time()
 
         MC = mysql_client()
         sql = 'select file from media where name="%s" and chunkID=0' % fileName
-        spilitCount = int(MC.read_sql(sql)[0][0])
+        splitCount = int(MC.read_sql(sql)[0][0])
 
-        with open(filePath, "wb") as f:
-            for i in tqdm(range(1, spilitCount + 1)):
-                f.write(MC.readBLOB(fileName, i))
+        if OPEN_THREAD:
+            with open(filePath, "wb") as f:
+                f.truncate(splitCount * 1024 * 1024)
+            getFileWork(filePath, splitCount)
+        else:
+            with open(filePath, "wb") as f:
+                for i in tqdm(range(1, splitCount + 1)):
+                    f.write(MC.readBLOB(fileName, i))
 
+        endTime = time.time()
+        print("耗时: %s秒" % int(endTime - startTime))
 
-    # todo: 这里是未完成的代码
-    # target = ''
-    # p = Pool(MAX_PROCESS)
-    # p.apply_async(update_progress, (i,))
-    # p.close()
-    # p.join()
+    elif method == "tree":
+        pass
 
