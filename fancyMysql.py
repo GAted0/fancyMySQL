@@ -213,8 +213,10 @@ if __name__ == '__main__':
         splitCount = int(MC.read_sql(sql)[0][0])
 
         if OPEN_THREAD:
+            lastChunkBytes = len(MC.readBLOB(fileName, splitCount))
+            allChunkBytes = (splitCount-1) * 1024 * 1024 + lastChunkBytes
             with open(filePath, "wb") as f:
-                f.truncate(splitCount * 1024 * 1024)
+                f.truncate(allChunkBytes)
             getFileWork(fileName, filePath, splitCount)
         else:
             with open(filePath, "wb") as f:

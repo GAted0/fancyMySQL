@@ -14,9 +14,8 @@ MYSQL_URI = {
     'password': '123456'
 }
 
-#　多线程下载已有人pm有bug，调试中~
 # 是否开启多线程, False, True
-OPEN_THREAD=False
+OPEN_THREAD=True
 
 # 最大线程数
 MAX_THREAD=10
