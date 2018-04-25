@@ -143,18 +143,18 @@ def putFileWork(fileName, bigChunkedFileDict, maxThread=MAX_THREAD):
         else:
             t.join()
 
-def getFileThread(filePath, singleChunk):
+def getFileThread(fileName, filePath, singleChunk):
     MC = mysql_client()
-    with open(filePath, "wb") as f:
+    with open(filePath, "rb+") as f:
         f.seek((singleChunk-1)*1024*1024)
         f.write(MC.readBLOB(fileName, singleChunk))
     del MC
     gc.collect()
 
-def getFileWork(filePath, splitCount, maxThread=MAX_THREAD):
+def getFileWork(fileName, filePath, splitCount, maxThread=MAX_THREAD):
     while splitCount:
         if threading.activeCount() < maxThread:
-            t = threading.Thread(target=getFileThread, kwargs={'filePath': filePath, 'singleChunk': splitCount})
+            t = threading.Thread(target=getFileThread, kwargs={'fileName': fileName, 'filePath': filePath, 'singleChunk': splitCount})
             splitCount = splitCount - 1
             t.setDaemon(True)
             t.start()
@@ -215,7 +215,7 @@ if __name__ == '__main__':
         if OPEN_THREAD:
             with open(filePath, "wb") as f:
                 f.truncate(splitCount * 1024 * 1024)
-            getFileWork(filePath, splitCount)
+            getFileWork(fileName, filePath, splitCount)
         else:
             with open(filePath, "wb") as f:
                 for i in tqdm(range(1, splitCount + 1)):
