@@ -12,8 +12,8 @@ from warnings import filterwarnings
 from setting import MYSQL_URI, OPEN_THREAD, MAX_THREAD
 filterwarnings('ignore', category=MySQLdb.Warning)
 
-# version: beta 1.2
-# todo:　上传完毕，包完整检查，重试机制
+# version: beta 1.3
+# todo:　包不完整，重试机制
 # todo: 未优化拆包内存：　上传需要占用同等文件大小的内存。 [下次重点优化,边拆边发]
 # todo: 未作分表存储（一直单表存储数据会导致目标服务器负载高）,分表聚合索引mediaIndex。
 
@@ -95,6 +95,7 @@ class file_handle(object):
                     break
         return self.memoryBuffer
 
+
 def createTable():
     MC = mysql_client()
     sql = '''
@@ -116,6 +117,11 @@ def createTable():
     gc.collect()
 
 def putFileThread(fileName, fileChunk):
+    '''
+    :param fileName: 文件名
+    :param fileChunk:　待上传的单个文件块
+    :return:
+    '''
     MC = mysql_client()
     keyContent = fileChunk[0]
     valueContent = fileChunk[1]
@@ -129,6 +135,12 @@ def putFileThread(fileName, fileChunk):
     gc.collect()
 
 def putFileWork(fileName, bigChunkedFileDict, maxThread=MAX_THREAD):
+    '''
+    :param fileName: 文件名
+    :param bigChunkedFileDict:　拆分的整个文件块
+    :param maxThread: 最大线程
+    :return:
+    '''
     while len(bigChunkedFileDict):
         if threading.activeCount() < maxThread:
             t = threading.Thread(target=putFileThread, kwargs={'fileName': fileName, 'fileChunk': bigChunkedFileDict.popitem()})
@@ -144,6 +156,12 @@ def putFileWork(fileName, bigChunkedFileDict, maxThread=MAX_THREAD):
             t.join()
 
 def getFileThread(fileName, filePath, singleChunk):
+    '''
+    :param fileName: 文件名
+    :param filePath:　文件写入路径
+    :param singleChunk:　待下载的文件索引块
+    :return:
+    '''
     MC = mysql_client()
     with open(filePath, "rb+") as f:
         f.seek((singleChunk-1)*1024*1024)
@@ -152,6 +170,13 @@ def getFileThread(fileName, filePath, singleChunk):
     gc.collect()
 
 def getFileWork(fileName, filePath, splitCount, maxThread=MAX_THREAD):
+    '''
+    :param fileName:　文件名
+    :param filePath:　文件写入路径
+    :param splitCount:　文件总索引块数量
+    :param maxThread:　最大线程
+    :return:
+    '''
     while splitCount:
         if threading.activeCount() < maxThread:
             t = threading.Thread(target=getFileThread, kwargs={'fileName': fileName, 'filePath': filePath, 'singleChunk': splitCount})
@@ -167,12 +192,31 @@ def getFileWork(fileName, filePath, splitCount, maxThread=MAX_THREAD):
         else:
             t.join()
 
+def checkPackageComplete(fileName):
+    MC = mysql_client()
+    sql = 'select file from media where name="%s" and chunkID=0' % fileName
+    splitCount = int(MC.read_sql(sql)[0][0])
+    sql = 'select count(name) from media where name="%s"' % fileName
+    writeCount = int(MC.read_sql(sql)[0][0])
+    if splitCount == writeCount-1:
+        return True
+    else:
+        return False
+
+def getFileList():
+    MC = mysql_client()
+    sql = 'select distinct(name) from media'
+    for i_index, i in enumerate(MC.read_sql(sql)):
+        print("%d: %s" % (i_index+1,i[0]))
+    del MC
+    gc.collect()
+
 if __name__ == '__main__':
     '''
     put: python fancyMysql.py put $filePath
     get: python fancyMysql.py get $fileName $filePath 
     '''
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         raise Exception("Parameter Exception!")
 
     createTable()
@@ -197,6 +241,11 @@ if __name__ == '__main__':
                 else:
                     MC.writeBLOB(fileName=fileName, chunkID=int(0), binaryBuffer=bytes(v))
             del MC
+
+        if checkPackageComplete(fileName) is False:
+            print('上传失败, 完整性校验失败!')
+        else:
+            print('上传成功, 完整性校验成功!')
 
         del FH
         gc.collect()
@@ -227,5 +276,6 @@ if __name__ == '__main__':
         print("耗时: %s秒" % int(endTime - startTime))
 
     elif method == "tree":
-        pass
+        getFileList()
+
 
