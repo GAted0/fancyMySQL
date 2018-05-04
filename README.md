@@ -18,15 +18,15 @@ python fancyMySQL.py put $fileName
 
 python fancyMySQL.py get $fileName $filePath　
 
-4、目录：
+4、 目录： 
 
-python fancyMySQL.py tree        　　
+python fancyMySQL.py tree          　　
 
 # 更新说明　　　　
 
-20180504: version beta 1.3, 上传文件块完整度检查; 加入tree命令，文件目录展示
-20180425: version beta 1.2, 加入多线程下载，类似IDM
-20180424: version beta 1.1, 自动创建表, 加入多线程上传    
+20180504: version beta 1.3, 上传文件块完整度检查; 加入tree命令，文件目录展示    
+20180425: version beta 1.2, 加入多线程下载，类似IDM    
+20180424: version beta 1.1, 自动创建表, 加入多线程上传        
 
 
 
