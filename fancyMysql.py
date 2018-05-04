@@ -192,7 +192,15 @@ def getFileWork(fileName, filePath, splitCount, maxThread=MAX_THREAD):
         else:
             t.join()
 
-def checkPackageComplete(fileName):
+def getFileList():
+    MC = mysql_client()
+    sql = 'select distinct(name) from media'
+    for i_index, i in enumerate(MC.read_sql(sql)):
+        print("%d: %s" % (i_index+1,i[0]))
+    del MC
+    gc.collect()
+
+def _checkPackageComplete(fileName):
     MC = mysql_client()
     sql = 'select file from media where name="%s" and chunkID=0' % fileName
     splitCount = int(MC.read_sql(sql)[0][0])
@@ -203,13 +211,18 @@ def checkPackageComplete(fileName):
     else:
         return False
 
-def getFileList():
+def _checkPackageExist(fileName):
     MC = mysql_client()
-    sql = 'select distinct(name) from media'
-    for i_index, i in enumerate(MC.read_sql(sql)):
-        print("%d: %s" % (i_index+1,i[0]))
+    sql = 'select count(id) from media where name="%s" and chunkID=0' % fileName
+    isExist = int(MC.read_sql(sql)[0][0])
     del MC
     gc.collect()
+
+    if isExist == 0:
+        return False
+    else:
+        return True
+
 
 if __name__ == '__main__':
     '''
@@ -228,6 +241,10 @@ if __name__ == '__main__':
     elif method == "put":
         filePath = sys.argv[2]
         fileName = filePath.split("/")[-1]
+        if _checkPackageExist(fileName) is True:
+            print('文件已存在!')
+            sys.exit(0)
+
         startTime = time.time()
         FH = file_handle(filePath)
 
@@ -242,7 +259,7 @@ if __name__ == '__main__':
                     MC.writeBLOB(fileName=fileName, chunkID=int(0), binaryBuffer=bytes(v))
             del MC
 
-        if checkPackageComplete(fileName) is False:
+        if _checkPackageComplete(fileName) is False:
             print('上传失败, 完整性校验失败!')
         else:
             print('上传成功, 完整性校验成功!')
@@ -255,6 +272,10 @@ if __name__ == '__main__':
     elif method == "get":
         fileName = sys.argv[2]
         filePath = sys.argv[3]
+        if _checkPackageExist(fileName) is False:
+            print('文件不存在!')
+            sys.exit(0)
+
         startTime = time.time()
 
         MC = mysql_client()
