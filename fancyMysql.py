@@ -225,9 +225,11 @@ def _checkPackageExist(fileName):
 
 
 if __name__ == '__main__':
-    '''
-    put: python fancyMysql.py put $filePath
-    get: python fancyMysql.py get $fileName $filePath 
+    helpStr = '''
+    [帮助] help: python fancyMysql.py help
+    [上传] put: python fancyMysql.py put $filePath
+    [下载] get: python fancyMysql.py get $fileName $filePath 
+    [目录] tree: python fancyMysql.py tree
     '''
     if len(sys.argv) < 2:
         raise Exception("Parameter Exception!")
@@ -235,8 +237,11 @@ if __name__ == '__main__':
     createTable()
 
     method = sys.argv[1]
-    if method not in ["put", "get", "tree"]:
-        raise Exception("Put[上传] or Get[下载] or tree[预览] File?")
+    if method not in ["help", "put", "get", "tree"]:
+        raise Exception("help[帮助] or put[上传] or get[下载] or tree[目录] File?")
+
+    elif method == "help":
+        print(helpStr)
 
     elif method == "put":
         filePath = sys.argv[2]
