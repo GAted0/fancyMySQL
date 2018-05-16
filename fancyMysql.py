@@ -28,13 +28,18 @@ class mysql_client(object):
                 user = MYSQL_URI.get('user'),
                 passwd = MYSQL_URI.get('password'),
                 port = MYSQL_URI.get('port'),
+                connect_timeout = MYSQL_URI.get('timeout'),
                 local_infile=True
             )
         except Exception as e:
-            print("连接数据库出错!")
+            print("连接数据库出错,检查setting.py数据库配置!")
+            sys.exit(0)
 
     def __del__(self):
-        self.mysql.close()
+        try:
+            self.mysql.close()
+        except:
+            pass
 
     def exec_sql(self, sql):
         cur = self.mysql.cursor()

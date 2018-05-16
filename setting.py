@@ -11,7 +11,8 @@ MYSQL_URI = {
     'host': 'host',
     'port': 3306,
     'user': 'root',
-    'password': '123456'
+    'password': '123456',
+    'timeout': 3
 }
 
 # 是否开启多线程, False, True
